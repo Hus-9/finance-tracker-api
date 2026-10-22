@@ -1,5 +1,7 @@
 package com.husnain.financetracker.controller;
 
+import com.husnain.financetracker.dto.AuthResponse;
+import com.husnain.financetracker.dto.LoginRequest;
 import com.husnain.financetracker.dto.RegisterRequest;
 import com.husnain.financetracker.dto.UserResponse;
 import com.husnain.financetracker.service.AuthService;
@@ -23,7 +25,16 @@ public class AuthController {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse register(@Valid @RequestBody RegisterRequest request) {
+
         return authService.register(request);
+
+    }
+
+    @PostMapping("/login")
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+
+        return authService.login(request);
+
     }
 }
 
