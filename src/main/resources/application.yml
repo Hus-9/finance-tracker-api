@@ -1,17 +1,33 @@
+# This is the main setting file for the app, Spring reads it when the app starts.
 spring:
   application:
+    # Just the name of the app, it shows up in the logs.
     name: finance-tracker
   config:
+    # Loads the secrets from the .env file in the project folder so they're not written in this file.
+    # Optional means the app still starts if there's no .env, like on a server where the values are set as environment variables.
+    # The [.properties] bit tells Spring to read the .env file like a normal properties file.
     import: optional:file:.env[.properties]
   datasource:
+    # Where the PostgreSQL database is, so on this computer on port 5432 in a database called financetracker.
     url: jdbc:postgresql://localhost:5432/financetracker
     username: financetracker
+    # The password comes from DB_PASSWORD in the .env file so it never ends up on GitHub.
     password: ${DB_PASSWORD}
   jpa:
+    # This closes the database connection as soon as the service is done instead of keeping it open until the response is sent.
+    # It stops lazy loading from secretly running extra queries while the response is being turned into JSON.
     open-in-view: false
     hibernate:
+      # validate means Hibernate never makes or changes the tables itself, it just checks they match the entity classes when the app starts.
+      # If something doesn't match the app won't start so you find out straight away instead of getting weird errors later.
+      # The actual tables get made by the Flyway migration files in db/migration.
       ddl-auto: validate
+# Our own settings, these are the ones JwtService reads with @Value
 app:
   jwt:
+    # The secret key used to sign the tokens, it comes from JWT_SECRET in the .env file.
+    # It has to be base64 and at least 32 bytes once decoded or the app won't start.
     secret: ${JWT_SECRET}
+    # How long a token lasts before the user has to log in again, 60 minutes is 1 hour.
     expiration-minutes: 60

@@ -1,14 +1,26 @@
+# This runs the PostgreSQL database in Docker so you don't have to install Postgres on your computer.
+# It only runs the database, the app itself still runs from IntelliJ.
+# Start it with docker compose up -d and stop it with docker compose down.
 services:
   db:
+    # Postgres version 16, alpine is just a smaller version of the image so it downloads quicker.
     image: postgres:16-alpine
+    # These make the database and the user the first time it starts, they match what's in application.yml
+    # They only work the first time when the database is empty, if you change the password in .env later the database keeps the old one.
+    # To start fresh with a new password you have to delete the data with docker compose down -v.
     environment:
       POSTGRES_DB: financetracker
       POSTGRES_USER: financetracker
+      # Docker Compose reads DB_PASSWORD from the .env file in the same folder by itself.
+      # The :? bit makes it stop with that message if DB_PASSWORD isn't set, instead of starting with no password.
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      # Connects port 5432 on your computer to port 5432 in the container so the app can reach the database at localhost:5432
     ports:
       - "5432:5432"
+      # Saves the database files in a Docker volume called pgdata so your data is still there after you stop or restart the container.
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+# This makes the pgdata volume, Docker manages where it's actually stored.
 volumes:
   pgdata:
