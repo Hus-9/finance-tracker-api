@@ -9,6 +9,9 @@ import com.husnain.financetracker.model.User;
 import com.husnain.financetracker.repository.UserRepository;
 import com.husnain.financetracker.security.JwtService;
 import com.husnain.financetracker.security.UserPrincipal;
+import com.husnain.financetracker.model.Category;
+import com.husnain.financetracker.model.TransactionType;
+import com.husnain.financetracker.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,16 +20,34 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 // This is where the logic for signing up and logging in happens, AuthController passes everything in here.
 @Service
 @RequiredArgsConstructor
 
 public class AuthService {
 
+    // A small record to hold the name and type of one default category.
+    record DefaultCategory(String name, TransactionType type){
+
+    }
+
+    //Every new user gets these categories when they sign up so they can start adding transactions straight away.
+    // static final means there's only one copy of this list and it never changes.
+    private static final List<DefaultCategory> DEFAULT_CATEGORIES = List.of(
+            new DefaultCategory("Salary", TransactionType.INCOME),
+            new DefaultCategory("Rent", TransactionType.EXPENSE),
+            new DefaultCategory("Food", TransactionType.EXPENSE),
+            new DefaultCategory("Transport", TransactionType.EXPENSE),
+            new DefaultCategory("Bills", TransactionType.EXPENSE),
+            new DefaultCategory("Entertainment", TransactionType.EXPENSE));
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final CategoryRepository categoryRepository;
 
     // Makes a new user and saves them in the database.
     @Transactional
@@ -51,6 +72,18 @@ public class AuthService {
 
         // Saves the user and sends back their details but no token so they still have to log in after.
         User saved = userRepository.save(user);
+
+        // Turns each default into a real Category for this user and saves them all in one go.
+        // It's inside the same @Transactional as saving the user so if this fails the user doesn't get saved either.
+        List<Category> categories = DEFAULT_CATEGORIES.stream()
+                .map(def -> Category.builder()
+                        .user(saved)
+                        .name(def.name())
+                        .type(def.type())
+                        .build())
+                .toList();
+        categoryRepository.saveAll(categories);
+
         return UserResponse.from(saved);
 
     }

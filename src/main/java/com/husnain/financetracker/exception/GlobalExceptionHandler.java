@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
 import java.util.List;
@@ -26,6 +27,25 @@ import java.util.List;
 @RestControllerAdvice
 
 public class GlobalExceptionHandler {
+
+    // When the request breaks one of our own rules, like an INCOME transaction in an EXPENSE category, it sends back 400 Bad Request.
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+
+    }
+
+    // This is a backup for when the database itself refuses something, like the unique rules on emails and category names.
+    // Normally the services catch these first, but if two requests happen at the exact same time one can slip through.
+    // It logs the database's reason for us and sends the user a 409 without any database details.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
+
+        log.warn("Database refused a change on {}: {}", request.getRequestURI(), ex.getMostSpecificCause().getMessage());
+        return build(HttpStatus.CONFLICT, "That clashes with data that already exists", request, null);
+
+    }
 
     // When something isn't found, like an account id that doesn't exist or belongs to someone else, it sends back 404 Not found.
     @ExceptionHandler(ResourceNotFoundException.class)
