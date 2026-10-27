@@ -8,6 +8,7 @@ import com.husnain.financetracker.model.Category;
 import com.husnain.financetracker.repository.CategoryRepository;
 import com.husnain.financetracker.repository.TransactionRepository;
 import com.husnain.financetracker.repository.UserRepository;
+import com.husnain.financetracker.repository.BudgetRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
+    private final BudgetRepository budgetRepository;
     private final UserRepository userRepository;
 
     // Gets all of the user's categories, EXPENSE first then INCOME, A to Z.
@@ -70,10 +72,10 @@ public class CategoryService {
 
         }
 
-        // Changing INCOME to EXPENSE (or the other way) isn't allowed once transactions use it.
+        // Changing INCOME to EXPENSE (or the other way) isn't allowed once transactions or budgets use the category.
         // Otherwise the old transactions would end up in a category with the opposite type.
         boolean typeChanged = category.getType() != request.type();
-        if (typeChanged && transactionRepository.existsByCategoryId(categoryId)) {
+        if (typeChanged && (transactionRepository.existsByCategoryId(categoryId) || budgetRepository.existsByCategoryId(categoryId))) {
 
             throw new ConflictException("You can't change the type of a category that already has transactions");
 

@@ -1,6 +1,8 @@
 package com.husnain.financetracker.repository;
 
 import com.husnain.financetracker.model.Transaction;
+import com.husnain.financetracker.dto.CategorySpending;
+import com.husnain.financetracker.model.TransactionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -10,7 +12,10 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.Optional;
+import java.time.LocalDate;
+import java.util.List;
 
 // This is how we talk to the transactions table.
 // JpaSpecificationExecutor lets us build a query bit by bit, which we need for the optional filters on the list endpoint.
@@ -37,5 +42,36 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
     // Checks if any transaction uses this category, used before deleting a category.
     boolean existsByCategoryId(Long categoryId);
+
+    // Adds up all of one type of transaction for a user between two dates, like all the EXPENSE ones in October.
+    // sum gives back null if there's nothing to add up, ReportService turns that into 0.00.
+    @Query("""
+            select sum(t.amount) from Transaction t 
+            where  t.account.user.id = :userId
+                and t.type = :type
+                and t.date >= :from and t.date <= :to
+            """)
+    BigDecimal sumAmount(@Param("userId") Long userId,
+                         @Param("type") TransactionType type,
+                         @Param("from") LocalDate from,
+                         @Param("to") LocalDate to);
+
+    // Same idea but it gives one total per category, biggest first.
+    // select new builds a CategorySpending straight from each row of the result.
+    // group by puts all the transaction with the same category together so sum adds each category up on its own.
+    @Query("""
+            select new com.husnain.financetracker.dto.CategorySpending(c.id, c.name, sum(t.amount))
+            from Transaction t
+            join t.category c
+            where t.account.user.id = :userId
+                and t.type = :type
+                and t.date >= :from and t.date <= :to
+            group by c.id, c.name
+            order by sum(t.amount) desc, c.name asc
+            """)
+    List<CategorySpending> sumAmountByCategory(@Param("userId") Long userId,
+                                               @Param("type") TransactionType type,
+                                               @Param("from") LocalDate from,
+                                               @Param("to") LocalDate to);
 
 }
