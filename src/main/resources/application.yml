@@ -9,8 +9,8 @@ spring:
     # The [.properties] bit tells Spring to read the .env file like a normal properties file.
     import: optional:file:.env[.properties]
   datasource:
-    # Where the PostgreSQL database is, so on this computer on port 5432 in a database called financetracker.
-    url: jdbc:postgresql://localhost:5432/financetracker
+    # Uses DB_URL if it's set, like inside Docker where the database is called db, otherwise it''s lcoalhost like before.
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/financetracker}
     username: financetracker
     # The password comes from DB_PASSWORD in the .env file so it never ends up on GitHub.
     password: ${DB_PASSWORD}

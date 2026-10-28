@@ -1,6 +1,7 @@
 # This runs the PostgreSQL database in Docker so you don't have to install Postgres on your computer.
-# It only runs the database, the app itself still runs from IntelliJ.
-# Start it with docker compose up -d and stop it with docker compose down.
+# docker compose up -d db only starts the database, use this when you run the app from IntelliJ.
+# docker compose up --build starts the database and the API together, both in Docker.
+# Stop everything with docker compose down.
 services:
   db:
     # Postgres version 16, alpine is just a smaller version of the image so it downloads quicker.
@@ -20,6 +21,28 @@ services:
       # Saves the database files in a Docker volume called pgdata so your data is still there after you stop or restart the container.
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # Docker checks every 5 seconds if the database is actually ready for connections, not just switched on.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U financetracker -d financetracker"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # The API itself, built from the DockerFile in this folder.
+  api:
+    build: .
+    # Waits until the database passes its healthcheck before starting the app.
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Inside Docker the database isn't at localhost, it's at db which is the name of the service above.
+      DB_URL: jdbc:postgresql://db:5432/financetracker
+      # Same secrets as before, Docker Compose reads them from .env and hands them to the app.
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+    ports:
+      - "8080:8080"
 
 # This makes the pgdata volume, Docker manages where it's actually stored.
 volumes:

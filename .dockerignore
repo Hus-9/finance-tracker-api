@@ -1,0 +1,7 @@
+# Stuff Docker doesn't need when it builds the image, it keeps the build quick and keeps the secrets in .env out of the image.
+target/
+.git/
+.github/
+.idea/
+*.iml
+.env
