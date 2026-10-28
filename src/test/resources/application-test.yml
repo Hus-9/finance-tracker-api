@@ -1,0 +1,13 @@
+# Settings only used by the integration tests, Spring loads this on top of application.yml because of @ActiveProfiles test.
+# The database details are just placeholders, Testcontainers swaps in its own database when the tests run.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/unused
+    username: test
+    password: test
+
+app:
+  jwt:
+  # A made up key that's only used by the test, it isn't a real secret so it's fine on GitHub.
+    secret: dGVzdC1vbmx5LWp3dC1zZWNyZXQta2V5LWZvci1pbnRlZ3JhdGlvbi10ZXN0cy0wMTIzNDU2Nzg5
+    expiration-minutes: 5
