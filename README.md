@@ -85,7 +85,7 @@ Everything apart from register and login needs `Authorization: Bearer` header wi
 
 ## Design decisions
 
-- **You can only ever see your own data.** Every lookup includes the logged in user's id, so asking for someone else's account, transactions or category returns **404**, not 403. a 403 would confirm it exists. There's a whole integration test class that tries to get at another user's data.
+- **You can only ever see your own data.** Every lookup includes the logged in user's id, so asking for someone else's account, transactions or category returns **404**, not 403. A 403 would confirm it exists. There's a whole integration test class that tries to get at another user's data.
 - **Money is never a double.** Amounts are `BigDecimal` in Java and `NUMERIC(12,2)` in PostgreSQL, so 0.10 + 0.20 is exactly 0.30. There's a test for that too.
 - **Only DTOs go in and out.** Entities never leave the service layer, so things like the password hash can't end up in a response by accident.
 - **Stateless auth.** The server keeps no sessions. Every request carries its own signed token, which runs out after 60 minutes.
